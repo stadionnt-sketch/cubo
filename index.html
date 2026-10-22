@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#12160e" />
+    <meta name="description" content="Кубический кейс — коллекционная игра с кубическими предметами." />
+    <title>Кубический кейс</title>
+    <link rel="stylesheet" href="styles.css?v=20261022-source-scroll" />
+    <!-- Яндекс Игры SDK. На платформе /sdk.js предоставляется автоматически. -->
+    <script src="/sdk.js" async onload="window.dispatchEvent(new Event('yandex-sdk-loaded'))"></script>
+  </head>
+  <body>
+    <div class="world-backdrop" aria-hidden="true">
+      <canvas class="world-3d" id="worldScene"></canvas>
+      <span class="world-moon"></span>
+      <span class="world-ridge world-ridge-far"></span>
+      <span class="world-ridge world-ridge-near"></span>
+      <span class="world-tree world-tree-left"></span>
+      <span class="world-tree world-tree-right"></span>
+      <span class="world-ground"></span>
+    </div>
+    <main class="app-shell">
+      <header class="topbar">
+        <div class="brand-mark" aria-label="Кубический кейс">
+          <span class="brand-cube" aria-hidden="true">◆</span>
+          <span>КУБИЧЕСКИЙ <b>КЕЙС</b></span>
+        </div>
+        <div class="wallet" aria-label="Баланс кристаллов">
+          <span class="wallet-icon" aria-hidden="true">✦</span>
+          <strong id="balance">0</strong>
+          <span class="wallet-label">кристаллов</span>
+          <button class="bonus-btn" id="bonusButton" title="Посмотреть рекламное видео и получить 1000 кристаллов">Реклама +1000 ✦</button>
+          <button class="icon-btn" id="soundButton" title="Выключить звуки" aria-label="Выключить звуки" aria-pressed="true">♪</button>
+          <button class="icon-btn music-btn" id="musicButton" title="Выключить музыку" aria-label="Выключить музыку" aria-pressed="true">♫</button>
+          <button class="icon-btn" id="resetButton" title="Сбросить прогресс" aria-label="Сбросить прогресс">↻</button>
+        </div>
+      </header>
+
+      <section class="hero-row">
+        <div class="hero-copy">
+          <p class="eyebrow">СЕЗОН 01 · ДИКИЙ МИР</p>
+          <h1>Открой свой<br /><em>блок удачи</em></h1>
+          <p class="hero-note">Собирай редкие находки, повышай ценность коллекции и обгоняй свой лучший результат.</p>
+          <div class="hero-actions">
+            <button class="primary-btn" id="openHeroButton"><span>Открыть кейс</span><b>100 ✦</b></button>
+            <button class="text-btn" id="howButton">Как играть <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
+        <div class="hero-art" aria-label="Кейс с кубическими предметами" role="img">
+          <div class="pixel-sun"></div>
+          <div class="hero-cube hero-cube-back"></div>
+          <div class="hero-cube hero-cube-main"><div class="cube-latch">✦</div></div>
+          <div class="floating-item item-diamond">◆</div>
+          <div class="floating-item item-emerald">◆</div>
+          <div class="floating-item item-gold">◆</div>
+          <div class="scanline"></div>
+        </div>
+      </section>
+
+      <nav class="tabs" aria-label="Разделы игры">
+        <button class="tab active" data-tab="case">Кейсы <span class="tab-count" id="caseCount">19</span></button>
+        <button class="tab" data-tab="inventory">Инвентарь <span class="tab-count" id="inventoryCount">0</span></button>
+        <button class="tab" data-tab="upgrade">Апгрейд <span class="tab-count">↗</span></button>
+        <button class="tab" data-tab="collection">Коллекция <span class="tab-count" id="collectionCount">0/135</span></button>
+        <button class="tab" data-tab="profile">Профиль <span class="tab-count profile-reward-count" id="profileRewardCount">◉</span></button>
+      </nav>
+
+      <section class="view" id="caseView">
+        <div class="section-heading">
+          <div><p class="eyebrow">ДОСТУПНЫЕ КЕЙСЫ</p><h2>Выбери свой шанс</h2></div>
+          <div class="drop-hint"><span class="live-dot"></span> Предметы в платном кейсе стоят 30–200% его цены · защита удачи после 7 неудач</div>
+        </div>
+        <div class="case-grid" id="caseGrid"></div>
+        <div class="rarity-strip" aria-label="Шкала редкости">
+          <span class="rarity-label">ШКАЛА ЦЕННОСТИ</span>
+          <span class="rarity-chip common">Обычный</span><span class="rarity-chip uncommon">Необычный</span><span class="rarity-chip rare">Редкий</span><span class="rarity-chip epic">Эпический</span><span class="rarity-chip legendary">Легендарный</span>
+        </div>
+      </section>
+
+      <section class="view hidden" id="inventoryView">
+        <div class="section-heading"><div><p class="eyebrow">ТВОИ НАХОДКИ</p><h2>Инвентарь</h2></div><div class="inventory-heading-actions"><div class="inventory-total" id="inventoryTotal">0 ✦</div><button class="sell-all-button" id="sellAllInventory" disabled>Продать всё</button></div></div>
+        <div class="craft-panel" id="craftPanel"></div>
+        <div class="inventory-grid" id="inventoryGrid"></div>
+      </section>
+
+      <section class="view hidden" id="collectionView">
+        <div class="section-heading"><div><p class="eyebrow">ПОЛНЫЙ СПИСОК</p><h2>Коллекция</h2></div><div class="inventory-total" id="collectionProgress">0 из 135</div></div>
+        <div class="collection-sets" id="collectionSets"></div>
+        <div class="collection-grid" id="collectionGrid"></div>
+      </section>
+
+      <section class="view hidden" id="upgradeView">
+        <div class="section-heading"><div><p class="eyebrow">МАСТЕРСКАЯ КУБА</p><h2>Апгрейд предмета</h2></div><div class="inventory-total">выбери ставку и любую цель</div></div>
+        <div class="upgrade-layout">
+          <div class="upgrade-panel">
+            <div class="upgrade-slots">
+              <div class="upgrade-slot" id="upgradeSourceSlot"><span class="slot-placeholder">?</span><b>Выбери ставку</b><small>Можно выбрать несколько предметов</small></div>
+              <div class="upgrade-arrow" aria-hidden="true">→</div>
+              <div class="upgrade-slot upgrade-target" id="upgradeTargetSlot"><span class="slot-placeholder">?</span><b>Выбери цель</b><small>Любой предмет коллекции</small></div>
+            </div>
+            <div class="upgrade-wheel-stage" aria-label="Колесо шанса апгрейда">
+              <div class="fortune-wheel" id="upgradeWheel" style="--win-angle: 0deg">
+                <div class="wheel-center"><strong id="upgradeWheelChance">—</strong><small>ШАНС</small></div>
+              </div>
+              <div class="fortune-pointer" id="upgradeWheelPointer" aria-hidden="true"></div>
+            </div>
+              <div class="upgrade-balance-panel">
+                <div class="upgrade-balance-heading"><span>Кристаллы к ставке</span><small id="upgradeBalanceAvailable">Доступно: 0 ✦</small></div>
+                <div class="upgrade-balance-controls">
+                  <label class="upgrade-cash-input"><input id="upgradeBalanceStake" type="number" min="0" step="10" value="0" inputmode="numeric" aria-label="Сумма кристаллов из баланса для апгрейда" /><b>✦</b></label>
+                  <div class="upgrade-stake-presets" aria-label="Быстрый выбор кристаллов">
+                    <button type="button" data-stake-add="100">+100</button>
+                    <button type="button" data-stake-add="500">+500</button>
+                    <button type="button" data-stake-max>MAX</button>
+                  </div>
+                </div>
+                <input class="upgrade-balance-slider" id="upgradeBalanceRange" type="range" min="0" max="1000" step="10" value="0" aria-label="Настроить количество кристаллов для апгрейда" />
+              </div>
+              <div class="upgrade-meta"><span id="upgradeChance">Шанс успеха: —</span><strong id="upgradeStakeTotal">Ставка: 0 ✦</strong></div>
+            <p class="upgrade-reward-info" id="upgradeOdds">Выбери ставку и цель, чтобы увидеть шансы.</p>
+            <button class="primary-btn upgrade-action" id="upgradeButton" disabled><span>Улучшить предмет</span><b>↗</b></button>
+            <p class="upgrade-footnote">Сложи ценность выбранных предметов с кристаллами из баланса: общая ставка повышает шанс. Кристаллы списываются при запуске, при неудаче предметы ставки пропадают.</p>
+          </div>
+          <div class="upgrade-list-wrap">
+            <div class="upgrade-picker-heading">
+              <div><p class="eyebrow">ПРЕДМЕТЫ ДЛЯ СТАВКИ</p><small id="upgradeSourceCount">Выбери предметы из инвентаря</small></div>
+              <div class="upgrade-picker-controls"><button class="upgrade-rail-control" id="upgradeSourcePrev" type="button" title="Листать назад" aria-label="Предыдущие предметы">‹</button><button class="upgrade-rail-control" id="upgradeSourceNext" type="button" title="Листать вперёд" aria-label="Следующие предметы">›</button></div>
+            </div>
+            <div class="upgrade-list upgrade-source-rail" id="upgradeSourceList" aria-label="Выбор предметов для ставки"></div>
+            <div class="upgrade-source-scrollbar" id="upgradeSourceScrollbar" hidden>
+              <input class="upgrade-source-scroll-range" id="upgradeSourceScroll" type="range" min="0" max="0" step="1" value="0" aria-label="Прокрутить предметы для ставки" aria-controls="upgradeSourceList" />
+              <small id="upgradeSourcePosition">0 / 0</small>
+            </div>
+            <div class="upgrade-target-heading"><p class="eyebrow rewards-title">ЦЕЛЬ · КАТАЛОГ</p><small id="upgradeTargetRange">Выбери ставку, чтобы подобрать цель</small></div>
+            <div class="upgrade-multipliers" role="group" aria-label="Подобрать цель по множителю ставки">
+              <button class="upgrade-multiplier" type="button" data-target-multiplier="2"><b>2X</b><small>2–2,5×</small></button>
+              <button class="upgrade-multiplier" type="button" data-target-multiplier="5"><b>5X</b><small>5–6×</small></button>
+              <button class="upgrade-multiplier" type="button" data-target-multiplier="10"><b>10X</b><small>10–12×</small></button>
+            </div>
+            <label class="upgrade-search"><span>Предмет</span><input id="upgradeTargetSearch" type="search" placeholder="Найти цель" autocomplete="off" /></label>
+            <div class="upgrade-list target-list" id="upgradeTargetList"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="view hidden" id="profileView">
+        <div class="section-heading"><div><p class="eyebrow">ЛИЧНЫЙ ШТАБ</p><h2>Профиль</h2></div><div class="inventory-total" id="profileGreeting">Игрок</div></div>
+        <div class="profile-layout">
+          <div class="profile-panel profile-editor">
+            <p class="eyebrow">НИКНЕЙМ</p>
+            <div class="profile-name-row"><input id="nicknameInput" maxlength="20" type="text" value="Игрок" autocomplete="nickname" aria-label="Никнейм" /><button class="profile-save" id="saveNicknameButton">Сохранить</button></div>
+            <p class="profile-save-hint" id="profileSaveHint">Имя сохраняется на этом устройстве.</p>
+          </div>
+          <div class="profile-panel">
+            <p class="eyebrow">СТАТИСТИКА</p>
+            <div class="stats-grid">
+              <div class="stat-card"><span>Потрачено</span><b id="statSpent">0 ✦</b></div>
+              <div class="stat-card"><span>Открыто кейсов</span><b id="statOpened">0</b></div>
+              <div class="stat-card"><span>Апгрейдов</span><b id="statUpgrades">0</b></div>
+              <div class="stat-card"><span>Успешно</span><b id="statUpgradeWins">0</b></div>
+              <div class="stat-card"><span>Неудачно</span><b id="statUpgradeLosses">0</b></div>
+            </div>
+          </div>
+          <div class="profile-panel profile-best">
+            <p class="eyebrow">САМАЯ ДОРОГАЯ НАХОДКА</p>
+            <div id="profileBestItem"><span class="profile-empty">Открой кейс, чтобы получить первую находку.</span></div>
+          </div>
+           <div class="profile-panel engagement-panel" id="dailyPanel"></div>
+           <div class="profile-panel engagement-panel" id="seasonPanel"></div>
+           <div class="profile-panel engagement-panel" id="achievementPanel"></div>
+           <div class="profile-panel engagement-panel" id="leaguePanel"></div>
+           <div class="profile-panel engagement-panel history-panel" id="historyPanel"></div>
+        </div>
+      </section>
+
+      <footer class="footer"><span>Кубический кейс</span><span>Прогресс сохраняется автоматически</span><span>v1.0 · прототип</span></footer>
+    </main>
+
+    <div class="modal-backdrop hidden" id="modalBackdrop" aria-hidden="true">
+      <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" id="closeModal" aria-label="Закрыть">×</button>
+        <div class="case-opening-content" id="caseOpeningContent">
+          <div class="modal-kicker" id="modalKicker">ОТКРЫТИЕ КЕЙСА</div>
+          <h2 id="modalTitle">Кубический кейс</h2>
+          <div class="case-quantity" id="caseQuantityPanel">
+            <span>Количество</span>
+            <div class="quantity-control">
+              <button class="quantity-step" id="quantityMinus" aria-label="Уменьшить количество">−</button>
+              <output id="caseQuantity" aria-live="polite" aria-label="Количество кейсов">1</output>
+              <button class="quantity-step" id="quantityPlus" aria-label="Увеличить количество">+</button>
+            </div>
+            <small id="caseMaxHint"></small>
+          </div>
+          <p class="case-total-price" id="caseTotalPrice"></p>
+          <p class="case-refund-note" id="caseRefundNote">Продажа предмета вернёт его полную ценность без комиссии.</p>
+          <p class="case-pity-note" id="casePityNote"></p>
+          <div class="reveal-stage" id="revealStage"><div class="reveal-box">?</div></div>
+          <p class="reveal-caption" id="revealCaption">Нажми, чтобы проверить удачу</p>
+          <div class="drop-batch-actions hidden" id="dropBatchActions"><button class="drop-sell-all" id="dropSellAll">Продать все</button><button class="drop-store-all" id="dropStoreAll">Все в инвентарь</button></div>
+          <button class="primary-btn modal-action" id="modalAction"><span>Открыть</span><b>1 000 ✦</b></button>
+        </div>
+        <div class="case-preview hidden" id="casePreview">
+          <div class="case-preview-heading">
+            <div><p class="modal-kicker">СОДЕРЖИМОЕ КЕЙСА</p><h2 id="casePreviewTitle"></h2></div>
+            <span class="case-preview-count" id="casePreviewCount"></span>
+          </div>
+          <p class="case-preview-note" id="casePreviewNote"></p>
+          <div class="case-content-header"><span>Предмет</span><span>Ценность</span><span>Шанс</span></div>
+          <div class="case-content-list" id="caseContentsList" role="list" aria-label="Предметы кейса и шансы выпадения"></div>
+          <button class="primary-btn case-preview-open" id="previewOpenButton"><span>Открыть этот кейс</span><b></b></button>
+        </div>
+      </section>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <button class="achievement-notice hidden" id="achievementNotice" type="button" aria-label="Открыть достижения" aria-live="polite">
+      <span class="achievement-notice-icon" aria-hidden="true">★</span>
+      <span class="achievement-notice-copy"><small>ДОСТИЖЕНИЕ ОТКРЫТО</small><b id="achievementNoticeTitle"></b><span>Нажми, чтобы посмотреть</span></span>
+      <span class="achievement-notice-arrow" aria-hidden="true">↗</span>
+    </button>
+    <section class="help-panel hidden" id="helpPanel" role="dialog" aria-modal="true" aria-labelledby="helpTitle">
+      <div class="help-card">
+        <button class="modal-close" id="closeHelp" aria-label="Закрыть">×</button>
+        <p class="eyebrow">БЫСТРЫЙ СТАРТ</p>
+        <h2 id="helpTitle">Как играть</h2>
+        <ol>
+          <li>Выбери количество кейсов в пределах доступного баланса.</li>
+          <li>Для каждой находки выбери: продать сразу или оставить в инвентаре. Продажа возвращает полную ценность предмета без комиссии.</li>
+          <li>Смотри свои находки во вкладке «Инвентарь», а неизвестные предметы — в «Коллекции».</li>
+          <li>В «Апгрейде» выбери один или несколько предметов, добавь к ставке кристаллы из баланса и выбери цель. Общая ставка влияет на шанс, кристаллы списываются при запуске.</li>
+          <li>Колесо апгрейда показывает шанс цветным сектором; при неудаче ставка пропадает.</li>
+          <li>Бесплатный кейс становится доступен раз в три минуты.</li>
+          <li>Ежедневные задания, награда за серию входов и сезонные вехи дают дополнительные кристаллы.</li>
+          <li>После семи подряд неудачных платных открытий следующая находка будет эпической или легендарной.</li>
+          <li>Собирай тематические наборы, объединяй три дубликата в усиленный предмет и забирай достижения.</li>
+          <li>В профиле отображаются ближайшая цель, история и локальный недельный ранг.</li>
+          <li>В «Инвентаре» предметы продаются за 100% их ценности.</li>
+          <li>Кнопка «Продать всё» продаёт все находки из инвентаря за их полную стоимость.</li>
+          <li>Звуки действий и музыку можно включать отдельно кнопками с нотами в шапке.</li>
+          <li>Во вкладке «Профиль» можно изменить никнейм и посмотреть статистику игры.</li>
+          <li>На телефоне все действия выполняются касанием одной рукой; на компьютере — мышью.</li>
+        </ol>
+        <p class="help-note">Кристаллы — внутриигровая шкала ценности. Они не имеют денежного эквивалента и не выводятся из игры.</p>
+      </div>
+    </section>
+    <script src="items.js"></script>
+    <script src="game.js?v=20261022-source-scroll"></script>
+    <script type="module" src="world-scene.js"></script>
+  </body>
+</html>
